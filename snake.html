@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" href="css/style.css">
+    <title>Snake Game</title>
+</head>
+<body>
+    <div class="container">
+        <div id="overlay">
+            Your final score: <span id="final_score"></span>
+            <br>
+			<a onclick="window.location.reload()" href="#">Click To Play Again</a>
+			<p>Use arrow keys to play</p>
+        </div>
+        <div id="overlayEnd">
+            <p style="color: green">Congratulations! you won the game</p>  
+            <a onclick="window.location.reload()" href="#">Click To Play Again</a>
+        </div>
+        <div id="about">
+            Snake : Created by SOUIDI Abdelhak, (Computer engineer) , 09/2019
+        </div>
+        <canvas id="canvas" width="600" height="450">
+            Sorry, this browser doesn't support the canvas element
+        </canvas>
+        <div id="stats">
+            <div id="score"></div>
+            <div id="high_score"></div>
+            <div id="level"></div>
+            <button id="reset_score" onclick="resetScore()">Reset High Score</button>
+        </div>
+        <div id="stats2">
+           <div id="colorLabel">Snake Color</div>
+		</div>
+		<div id="mobile" style="text-align: center; background-color: salmon;">
+			Mobile Controller
+			<div><button id="btnUp">Up</button></div>
+			<div><button id="btnL">Left</button> <button id="btnR">Right</button></div>
+			<div><button id="btnDown">Down</button></div>
+		 </div>
+    </div>
+	<script src="js/jquery.js"></script>
+    <!--Main js-->
+    <script>
+		$(document).ready(function(){
+		// Define vars
+		var canv = $("#canvas")[0];
+		var ctx = canv.getContext('2d');
+
+		var level = 1;
+		var endGame = false;
+		var w = canv.width;
+		var h = canv.height;
+		var cw = 15;
+		var d = "right";
+		var food;
+		var score;
+		var color = "green";
+		var speed = 130;
+
+		var hasPlayedDead = false;
+		var hasPlayedWin = false;
+
+		// // load audio files
+		// let dead = new Audio();
+		// dead.loop = false;
+		// let eat = new Audio();
+		// eat.loop = false;
+		// let scoreIncrease = new Audio();
+		// scoreIncrease.loop = false;
+		// let directions  = new Audio();
+		// directions.loop = false;
+		// let winGame = new Audio();
+		// winGame.loop = false;
+		
+		// dead.src = "audio/dead.mp3";
+		// eat.src = "audio/eat.mp3";
+		// scoreIncrease.src = "audio/scoreIncrease.mp3";
+		// directions.src = "audio/directions.mp3";
+		// winGame.src = "audio/winGame.mp3";
+
+		var dead = new Audio('audio/dead.wav');
+		dead.loop = false;
+
+		var eat = new Audio('audio/eat.ogg');
+		eat.loop = false;
+
+		var scoreIncrease = new Audio('audio/scoreIncrease.wav');
+		scoreIncrease.loop = false;
+
+		var directions = new Audio('audio/directions.wav');
+		directions.loop = false;
+
+		var winGame = new Audio('audio/winGame.mp3');
+		winGame.loop = false;
+
+		
+
+		//Snake Array
+		var snake_array;
+
+		//Initializer
+		function init(){
+			d="right";
+			create_snake();
+			create_food();
+			score = 0;
+
+
+			if(typeof game_loop != "undefined") clearInterval (game_loop);
+			game_loop = setInterval(paint, speed);
+		}
+	   
+		 // Run Inisializer
+		 if(endGame == false){init();}
+		// Create snake function
+		function create_snake(){
+			var length = 5;
+			snake_array = [];
+			for(var i = length - 1; i >= 0; i--){
+				snake_array.push({x:i,y:0});
+			}
+		}
+		// Function Create food 
+		function create_food(){
+			food = {
+				x:Math.round(Math.random() * (w-cw) / cw),
+				y:Math.round(Math.random() * (h-cw) / cw)
+			};
+		}
+
+		// Paint snake
+		function paint(){
+			// Paint the canvas
+			ctx.fillStyle = "black";
+			ctx.fillRect(0, 0, w, h);
+			ctx.strokeStyle = "white";
+			ctx.strokeRect(0, 0, w, h);
+
+			var nx = snake_array[0].x;
+			var ny = snake_array[0].y;
+
+			if(d == 'right') nx++;
+			else if(d == 'left') nx--;
+			else if(d == 'up') ny--;
+			else if(d == 'down') ny++;
+
+			//Collide code
+			if(nx == -1 || nx == w/cw || ny == -1 || ny == h/cw || check_collision(nx, ny, snake_array)|| headCollision(nx, ny, snake_array)){
+			   // init();
+			   //Insert final score
+			   $('#final_score').html(score);
+			   //Show overlay
+			   $('#overlay').fadeIn(300); 
+			   
+			   endGame = true;
+			   if(!hasPlayedDead){
+				dead.play();
+				hasPlayedDead = true;
+			   }
+			   //alert(endGame);    
+			   return;
+			}
+
+			 //If player win the game 
+			 if(level > 5){
+				// init();
+				//Insert final score
+				$('#final_score').html(score);
+				//Show overlay
+				$('#overlayEnd').fadeIn(300); 
+				if(!hasPlayedWin){
+					winGame.play();
+					hasPlayedWin = true;
+				}
+				endGame = true;
+				//alert(endGame);    
+				return;
+			 }
+
+			if(nx == food.x && ny == food.y){
+				var tail = {x: nx, y: ny};
+				score++;
+				//alert(speed);
+				eat.play();
+				if(score % 10 == 0){
+					level +=1;
+					speed -=5;
+					game_loop = setInterval(paint, speed);
+					scoreIncrease.play();
+					switch(level){
+						//case 1:{color="green";break;}
+						case 2:{color="red";break;}
+						case 3:{color="blue";break;}
+						case 4:{color="maroon";break;}
+						case 5:{color="purple";break;}
+						case 6:{color="yellow";break;}
+					}
+					 //Increase snake color level 
+					
+					$('#stats2').append('<div id="snake_color"></div>');
+					$("#stats2").children().css({"backgroundColor": color, "border": "2px solid blue","borderRadius": "15px"});
+					 
+				}
+				
+				// Create food
+				create_food();
+			}else{
+				var tail = snake_array.pop();
+				tail.x = nx; tail.y = ny;
+			}
+
+			snake_array.unshift(tail);
+			for(var i = 0; i < snake_array.length; i++){
+				var c =     snake_array[i];
+				paint_cell(c.x, c.y);
+			}
+
+			// Paint cell
+			paint_cell(food.x, food.y);
+			
+
+			//Check score
+			checkscore(score);
+
+			//Display current score
+			$('#score').html('Your score: '+score);
+			$('#level').html('Your level: '+level);
+		}
+
+		function paint_cell(x, y){
+			ctx.fillStyle=color;
+			ctx.fillRect(x * cw, y * cw, cw, cw);
+			ctx.strokeStyle="white";
+			ctx.strokeRect(x * cw, y * cw, cw, cw);
+		}
+
+		function check_collision(x, y, array){
+			for(var i =0; i < array.length; i++){
+				if(array[i.x == x && array[i].y == y])
+					return true;
+			}
+			return false;
+		}
+
+		// cheack head collision function
+		function headCollision(x,y,array){
+			for(let i = 0; i < array.length; i++){
+				if(x == array[i].x && y == array[i].y){
+					return true;
+				}
+			}
+			return false;
+		}
+
+		//check score
+		function checkscore(score){
+			if(localStorage.getItem('highscore') === null){
+				//If there is no high score
+				localStorage.setItem('highscore', score);
+			}else{
+				//If there is high score
+				if(score > localStorage.getItem('highscore'))
+				localStorage.setItem('highscore', score);
+			}
+
+			 $('#high_score').html('High Score: '+localStorage.getItem('highscore'));
+		}
+
+		//Keyboard Controller
+		$(document).keydown(function(e){
+			var key = e.which;
+			if(key == "37" && d != "right" && !endGame) {d = "left";directions.play();}
+			else if(key == "38" && d != "down" && !endGame) {d = "up";directions.play();}
+			else if(key == "39" && d != "left" && !endGame) {d = "right";directions.play();}
+			else if(key == "40" && d != "up" && !endGame) {d = "down";directions.play();}
+		});
+
+		//Create snake color level 
+		$('#stats2').append('<div id="snake_color"></div>');
+		$("#stats2").children().css({"backgroundColor": "green", "fontSize": "16px","borderRadius": "15px"});
+		
+		//$("#snake_color").css("background", "green");
+
+		//mobile control
+		$("#btnUp").click(function(){
+			//Up
+			if( d != "down" && !endGame){
+				d = "up";directions.play();
+			}
+		});
+
+		$("#btnDown").click(function(){
+			//Down
+			if( d != "up" && !endGame){
+				d = "down";directions.play();
+			}
+		});
+
+		$("#btnL").click(function(){
+			//Left
+			if( d != "right" && !endGame){
+				d = "left";directions.play();
+			}
+		});
+
+		$("#btnR").click(function(){
+			//Right
+			if( d != "left" && !endGame){
+				d = "right";directions.play();
+			}
+		});
+	});
+
+	function resetScore(){
+		localStorage.highscore = 0;
+		//Display High Score
+		highscorediv = document.getElementById('high_score');
+		highscorediv.innerHTML = 'High Score: 0';
+	}
+
+	</script>
+</body>
+</html>
